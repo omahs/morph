@@ -161,7 +161,7 @@ async fn add_pending_req(Extension(queue): Extension<Arc<Mutex<Vec<ProveRequest>
     };
 
     if queue_lock.len() > 2 {
-        return String::from("The task queue is full");
+        return String::from(task_status::PROVING);
     }
     // Add request to queue
     log::info!("add pending req of batch: {:#?}", prove_request.batch_index);
