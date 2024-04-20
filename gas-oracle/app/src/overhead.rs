@@ -205,6 +205,7 @@ impl OverHead {
         };
         let chunks: Vec<Bytes> = param.batch_data.chunks;
         let l2_txn = extract_txn_num(chunks).unwrap_or(0);
+        log::info!("l2_txn.len = {:#?}", l2_txn);
 
         //Step3. Calculate l2 data gas
         let l2_data_gas = match self
@@ -376,10 +377,6 @@ impl OverHead {
         let tx_payload_gas = data_gas_cost(&tx_payload);
         log::info!("tx_payload_in_blob gas: {}", tx_payload_gas);
 
-        let txs = decode_transactions_from_blob(&tx_payload);
-        if l2_txn != txs.len() as u64 {
-            return Err(format!("decode_txs_len is not expected, l2_txn in calldata is {:?}, l2_txn in blob is {:?}", l2_txn, txs.len()).to_string());
-        }
         Ok(Some(tx_payload_gas))
     }
 }

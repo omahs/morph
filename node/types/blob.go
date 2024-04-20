@@ -181,12 +181,8 @@ func DecodeTxsFromBlob(blob *kzg4844.Blob) (eth.Transactions, error) {
 		return nil, err
 	}
 
-	nonEmptyChunkNum := binary.BigEndian.Uint16(data[:2])
-	if nonEmptyChunkNum == 0 {
-		return nil, nil
-	}
 	// skip metadata: 2bytes(chunkNum) + 15*4bytes(size per chunk)
-	reader := bytes.NewReader(data[62:])
+	reader := bytes.NewReader(data[60:])
 	txs := make(eth.Transactions, 0)
 	for {
 		var (

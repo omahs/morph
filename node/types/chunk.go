@@ -222,8 +222,7 @@ func (cks *Chunks) ConstructBlobPayload() []byte {
 		// blob metadata: chunki_size
 		binary.BigEndian.PutUint32(blobBytes[2+4*i:], uint32(chunkSize))
 	}
-	// blob metadata: num_chunks
-	binary.BigEndian.PutUint16(blobBytes[0:], uint16(numNonEmptyChunks))
+
 	return blobBytes
 }
 

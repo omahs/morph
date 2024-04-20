@@ -216,9 +216,14 @@ async fn prove_state(batch_index: u64, l1_rollup: &ShadowRollupType) -> bool {
                     Some(receipt) => {
                         // Check the status of the tx receipt
                         if receipt.status == Some(1.into()) {
-                            log::error!("tx of prove_state success, tx hash: {:?}", receipt.transaction_hash);
+                            log::error!(
+                                ">Tx of prove_state success, batchIndex = {:#?},tx hash: {:?}",
+                                batch_index,
+                                receipt.transaction_hash
+                            );
+                            return true;
                         } else {
-                            log::error!("tx of prove_state failed, tx hash: {:?}", receipt.transaction_hash);
+                            log::error!(">Tx of prove_state failed, tx hash: {:?}", receipt.transaction_hash);
                         }
                     }
                     None => {
