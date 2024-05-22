@@ -209,7 +209,7 @@ func (sr *Rollup) ProcessTx() error {
 	// case 2.1: disgard
 	// case 2.2: tx included -> success
 	// case 2.3: tx included -> failed
-	//          -> log tx info
+	//          -> reset index to failed index
 
 	// get all local txs
 	txRecords := sr.pendingTxs.GetAll()
@@ -274,7 +274,17 @@ func (sr *Rollup) ProcessTx() error {
 				log.Info("tx included",
 					logs...,
 				)
-				sr.pendingTxs.Remove(rtx.Hash())
+				if receipt.Status == types.ReceiptStatusSuccessful {
+					sr.pendingTxs.Remove(rtx.Hash())
+				} else {
+					// if tx is commitBatch
+					if utils.ParseMethod(rtx, sr.abi) == "commitBatch" {
+						fIndex := utils.ParseParentBatchIndex(rtx.Data())
+						sr.pendingTxs.pindex = fIndex
+					}
+
+				}
+
 			}
 
 		}

@@ -131,3 +131,17 @@ func ParseBusinessInfo(tx types.Transaction, a *abi.ABI) []interface{} {
 	}
 	return res
 }
+
+func ParseMethod(tx types.Transaction, a *abi.ABI) string {
+	if tx.Data() == nil || len(tx.Data()) < 4 {
+		return ""
+	}
+	id := tx.Data()[:4]
+	if bytes.Equal(id, a.Methods["commitBatch"].ID) {
+		return "commitBatch"
+	} else if bytes.Equal(id, a.Methods["finalizeBatch"].ID) {
+		return "finalizeBatch"
+	} else {
+		return ""
+	}
+}
