@@ -252,6 +252,8 @@ func (sr *Rollup) ProcessTx() error {
 					txRecord.queryTimes++
 					if txRecord.queryTimes >= 5 {
 						sr.pendingTxs.Remove(rtx.Hash())
+					} else {
+						log.Info("tx not found in mempool", "hash", rtx.Hash().Hex(), "query_times", txRecord.queryTimes)
 					}
 				} else {
 					return fmt.Errorf("query tx receipt error:%w", err)
@@ -275,9 +277,7 @@ func (sr *Rollup) ProcessTx() error {
 				log.Info("tx included",
 					logs...,
 				)
-				if receipt.Status == types.ReceiptStatusSuccessful {
-					sr.pendingTxs.Remove(rtx.Hash())
-				} else {
+				if receipt.Status != types.ReceiptStatusSuccessful {
 					// if tx is commitBatch
 					if utils.ParseMethod(rtx, sr.abi) == "commitBatch" {
 						fIndex := utils.ParseParentBatchIndex(rtx.Data())
@@ -286,6 +286,7 @@ func (sr *Rollup) ProcessTx() error {
 
 				}
 
+				sr.pendingTxs.Remove(rtx.Hash())
 			}
 
 		}
@@ -406,14 +407,22 @@ func (sr *Rollup) rollup() error {
 	var batchIndex uint64
 	var err error
 
+	cindexBig, err := sr.Rollup.LastCommittedBatchIndex(nil)
+	if err != nil {
+		return fmt.Errorf("get last committed batch index error:%v", err)
+	}
+	cindex := cindexBig.Uint64()
+
 	if sr.pendingTxs.pindex != 0 {
-		batchIndex = sr.pendingTxs.pindex + 1
-	} else {
-		batchIndexBig, err := sr.Rollup.LastCommittedBatchIndex(nil)
-		if err != nil {
-			return fmt.Errorf("get last committed batch index error:%v", err)
+
+		if cindex > sr.pendingTxs.pindex {
+			batchIndex = cindex + 1
+		} else {
+			batchIndex = sr.pendingTxs.pindex + 1
 		}
-		batchIndex = batchIndexBig.Uint64() + 1
+
+	} else {
+		batchIndex = cindex + 1
 	}
 
 	log.Info("batch info", "last_commit_batch", batchIndex-1, "batch_will_get", batchIndex)
