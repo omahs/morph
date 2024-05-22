@@ -36,6 +36,7 @@ const (
 	txSlotSize     = 32 * 1024
 	txMaxSize      = 4 * txSlotSize // 128KB
 	minFinalizeNum = 2              // min finalize num from contract
+	rotatorBuffer  = 15
 )
 
 type Rollup struct {
@@ -370,13 +371,25 @@ func (sr *Rollup) rollup() error {
 
 	if !sr.PriorityRollup {
 		// is the turn of the submitter
-		currentSubmitter, err := sr.getCurrentSubmitter()
+		currentSubmitter, start, end, err := sr.getCurrentSubmitter()
 		if err != nil {
 			return fmt.Errorf("get next submitter error:%v", err)
 		}
-		log.Info("rotator info", "turn", currentSubmitter.Hex(), "cur", sr.walletAddr())
+		log.Info("rotator info",
+			"turn", currentSubmitter.Hex(),
+			"cur", sr.walletAddr(),
+			"start", start,
+			"end", end,
+			"now", time.Now().Unix(),
+		)
 
 		if currentSubmitter.Hex() == sr.walletAddr() {
+			left := int(end) - time.Now().Second()
+			if left < rotatorBuffer {
+				log.Info("rollup time not enough, wait next turn", "left", left)
+				return nil
+			}
+
 			log.Info("start to rollup")
 		} else {
 			log.Info("wait for my turn")
@@ -890,19 +903,19 @@ func (sr *Rollup) replaceTx(tx *types.Transaction) (*types.Transaction, error) {
 	return newTx, nil
 }
 
-func (r *Rollup) getCurrentSubmitter() (*common.Address, error) {
+func (r *Rollup) getCurrentSubmitter() (*common.Address, uint64, uint64, error) {
 
 	for _, l2Submitter := range r.L2Submitters {
-		current, _, _, err := l2Submitter.GetCurrentSubmitter(nil)
+		current, start, end, err := l2Submitter.GetCurrentSubmitter(nil)
 		if err != nil {
 			log.Warn("get current submitter error", "error", err)
 			continue
 		}
-		return &current, nil
+		return &current, start.Uint64(), end.Uint64(), nil
 
 	}
 
-	return nil, errors.New("failed to get current submitter")
+	return nil, 0, 0, errors.New("failed to get current submitter")
 }
 
 func (r *Rollup) inSequencersSet() (bool, error) {
