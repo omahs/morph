@@ -1,12 +1,13 @@
 package services
 
 import (
-	"bytes"
 	"sort"
 	"sync"
 	"time"
 
 	"github.com/morph-l2/tx-submitter/utils"
+
+	"github.com/scroll-tech/go-ethereum/accounts/abi"
 	"github.com/scroll-tech/go-ethereum/common"
 	"github.com/scroll-tech/go-ethereum/core/types"
 )
@@ -25,6 +26,7 @@ type PendingTxs struct {
 	pnonce  uint64 // pending nonce
 	pindex  uint64 // pending batch index
 
+	pfinalize       uint64
 	commitBatchId   []byte
 	finalizeBatchId []byte
 }
@@ -44,18 +46,41 @@ func (pt *PendingTxs) Add(tx types.Transaction) {
 		sendTime: uint64(time.Now().Unix()),
 		tx:       tx,
 	}
-
-	// rollup tx: commitBatch
-	if len(tx.Data()) > 0 && bytes.Equal(tx.Data()[:4], pt.commitBatchId) {
-		pt.pindex = utils.ParseParentBatchIndex(tx.Data()) + 1
-	}
-	pt.pnonce = tx.Nonce()
 }
 
 func (pt *PendingTxs) Remove(txHash common.Hash) {
 	pt.mu.Lock()
 	defer pt.mu.Unlock()
 	delete(pt.txinfos, txHash)
+}
+
+func (pt *PendingTxs) Recover(txs []types.Transaction, a *abi.ABI) {
+	// restore state from mempool
+	if len(txs) > 0 {
+		var pbindex, pfindex uint64
+
+		for _, tx := range txs {
+			pt.Add(tx)
+
+			method := utils.ParseMethod(tx, a)
+			if method == "commitBatch" {
+
+				index := utils.ParseParentBatchIndex(tx.Data())
+				if index > pbindex {
+					pbindex = index
+				}
+			} else if method == "finalizeBatch" {
+				findex := utils.ParseFBatchIndex(tx.Data())
+				if findex > pfindex {
+					pfindex = findex
+				}
+			}
+		}
+
+		pt.SetPindex(pbindex)
+		pt.SetPFinalize(pfindex)
+		pt.SetNonce(txs[len(txs)-1].Nonce())
+	}
 }
 
 func (pt *PendingTxs) GetAll() []TxInfo {
@@ -98,4 +123,10 @@ func (pt *PendingTxs) SetNonce(nonce uint64) {
 	pt.mu.Lock()
 	defer pt.mu.Unlock()
 	pt.pnonce = nonce
+}
+
+func (pt *PendingTxs) SetPFinalize(finalize uint64) {
+	pt.mu.Lock()
+	defer pt.mu.Unlock()
+	pt.pfinalize = finalize
 }
