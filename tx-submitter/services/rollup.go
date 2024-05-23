@@ -251,20 +251,19 @@ func (sr *Rollup) ProcessTx() error {
 				if utils.ErrStringMatch(err, ethereum.NotFound) {
 					txRecord.queryTimes++
 					if txRecord.queryTimes >= 5 {
-						sr.pendingTxs.Remove(rtx.Hash())
-						var pindex uint64
-						if utils.ParseMethod(rtx, sr.abi) == "commitBatch" {
-							pindex = utils.ParseParentBatchIndex(rtx.Data())
-							sr.pendingTxs.SetPindex(pindex)
-						}
-						sr.pendingTxs.SetNonce(rtx.Nonce())
 						log.Warn("tx discarded",
 							"hash", rtx.Hash().Hex(),
 							"query_times", txRecord.queryTimes,
-							"reset_pindex", pindex,
-							"reset_nonce", rtx.Nonce(),
 						)
-
+						replacedtx, err := sr.replaceTx(&rtx)
+						if err != nil {
+							log.Error("resend discarded tx", "error", err)
+							return err
+						} else {
+							sr.pendingTxs.Remove(rtx.Hash())
+						}
+						sr.pendingTxs.Add(*replacedtx)
+						log.Info("resend discarded tx", "hash", rtx.Hash().Hex())
 					} else {
 						log.Info("tx not found in mempool", "hash", rtx.Hash().Hex(), "query_times", txRecord.queryTimes)
 					}
