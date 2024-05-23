@@ -207,7 +207,7 @@ func (sr *Rollup) ProcessTx() error {
 	// case 1: in mempool
 	//          -> check timeout
 	// case 2: no in mempool
-	// case 2.1: disgard
+	// case 2.1: discarded
 	// case 2.2: tx included -> success
 	// case 2.3: tx included -> failed
 	//          -> reset index to failed index
@@ -252,6 +252,19 @@ func (sr *Rollup) ProcessTx() error {
 					txRecord.queryTimes++
 					if txRecord.queryTimes >= 5 {
 						sr.pendingTxs.Remove(rtx.Hash())
+						var pindex uint64
+						if utils.ParseMethod(rtx, sr.abi) == "commitBatch" {
+							pindex = utils.ParseParentBatchIndex(rtx.Data())
+							sr.pendingTxs.SetPindex(pindex)
+						}
+						sr.pendingTxs.SetNonce(rtx.Nonce())
+						log.Warn("tx discarded",
+							"hash", rtx.Hash().Hex(),
+							"query_times", txRecord.queryTimes,
+							"reset_pindex", pindex,
+							"reset_nonce", rtx.Nonce(),
+						)
+
 					} else {
 						log.Info("tx not found in mempool", "hash", rtx.Hash().Hex(), "query_times", txRecord.queryTimes)
 					}

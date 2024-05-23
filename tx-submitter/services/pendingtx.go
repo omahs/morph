@@ -81,3 +81,15 @@ func (pt *PendingTxs) Get(txHash common.Hash) (TxInfo, bool) {
 	tx, ok := pt.txinfos[txHash]
 	return tx, ok
 }
+
+func (pt *PendingTxs) SetPindex(index uint64) {
+	pt.mu.Lock()
+	defer pt.mu.Unlock()
+	pt.pindex = index
+}
+
+func (pt *PendingTxs) SetNonce(nonce uint64) {
+	pt.mu.Lock()
+	defer pt.mu.Unlock()
+	pt.pnonce = nonce
+}
