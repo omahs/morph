@@ -249,7 +249,8 @@ func (sr *Rollup) ProcessTx() error {
 			if err != nil {
 				log.Error("query tx receipt error", "error", err)
 				if utils.ErrStringMatch(err, ethereum.NotFound) {
-					txRecord.queryTimes++
+					// sr.pendingTxs.txinfos
+					sr.pendingTxs.IncQueryTimes(rtx.Hash())
 					if txRecord.queryTimes >= 5 {
 						log.Warn("tx discarded",
 							"hash", rtx.Hash().Hex(),

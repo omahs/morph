@@ -82,6 +82,12 @@ func (pt *PendingTxs) Get(txHash common.Hash) (TxInfo, bool) {
 	return tx, ok
 }
 
+func (pt *PendingTxs) IncQueryTimes(txHash common.Hash) {
+	pt.mu.Lock()
+	defer pt.mu.Unlock()
+	pt.txinfos[txHash] = TxInfo{tx: pt.txinfos[txHash].tx, queryTimes: pt.txinfos[txHash].queryTimes + 1, sendTime: pt.txinfos[txHash].sendTime}
+}
+
 func (pt *PendingTxs) SetPindex(index uint64) {
 	pt.mu.Lock()
 	defer pt.mu.Unlock()
