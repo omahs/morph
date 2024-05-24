@@ -408,6 +408,7 @@ func (sr *Rollup) finalize() error {
 
 		sr.pendingTxs.SetNonce(signedTx.Nonce())
 		sr.pendingTxs.SetPFinalize(target.Uint64())
+		sr.pendingTxs.Add(*signedTx)
 	}
 
 	return nil
@@ -613,6 +614,7 @@ func (sr *Rollup) rollup() error {
 
 		sr.pendingTxs.SetPindex(batchIndex)
 		sr.pendingTxs.SetNonce(tx.Nonce())
+		sr.pendingTxs.Add(*signedTx)
 	}
 
 	return nil
