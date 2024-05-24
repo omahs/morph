@@ -336,6 +336,23 @@ func (sr *Rollup) finalize() error {
 		return nil
 	}
 
+	log.Info("finalize info",
+		"lastFianlzied", lastFinalized,
+		"lastCommited", lastCommited,
+		"finalize_index", target,
+	)
+
+	// batch exist
+	existed, err := sr.Rollup.BatchExist(nil, target)
+	if err != nil {
+
+		return nil
+	}
+	if !existed {
+		log.Warn("finalized batch not existed")
+		return nil
+	}
+
 	// in challange window
 	inWindow, err := sr.Rollup.BatchInsideChallengeWindow(nil, target)
 	if err != nil {
@@ -387,6 +404,8 @@ func (sr *Rollup) finalize() error {
 
 	log.Info("finalize tx info",
 		"batch_index", target,
+		"last_commited", lastCommited,
+		"last_finalized", lastFinalized,
 		"hash", signedTx.Hash().String(),
 		"type", signedTx.Type(),
 		"nonce", signedTx.Nonce(),
