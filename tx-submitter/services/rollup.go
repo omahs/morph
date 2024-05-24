@@ -239,15 +239,21 @@ func (sr *Rollup) ProcessTx() error {
 		_, ok := pendingtxMap[txRecord.tx.Hash()]
 		rtx := txRecord.tx
 
+		var method = "finalizeBatch"
+		if rtx.BlobTxSidecar() != nil {
+			method = "commitBatch"
+		}
+		log.Info("process tx", "txHash", rtx.Hash(), "nonce", rtx.Nonce(), "method", method)
 		// exist in mempool
 		if ok {
 			if txRecord.sendTime+uint64(sr.txTimout.Seconds()) < uint64(time.Now().Unix()) {
-				log.Info("tx timeout", "tx", rtx.Hash().Hex())
+				log.Info("tx timeout", "tx", rtx.Hash().Hex(), "nonce", rtx.Nonce(), "method", method)
 				newtx, err := sr.replaceTx(&rtx)
 				if err != nil {
-					log.Error("resubmit tx", "error", err)
+					log.Error("resubmit tx", "error", err, "tx", rtx.Hash().Hex(), "nonce", rtx.Nonce())
 					return fmt.Errorf("resubmit tx error:%w", err)
 				} else {
+					log.Info("replace success", "old tx", rtx.Hash().Hex(), "new tx", newtx.Hash(), "nonce", rtx.Nonce())
 					sr.pendingTxs.Remove(rtx.Hash())
 					sr.pendingTxs.Add(*newtx)
 				}
@@ -255,29 +261,30 @@ func (sr *Rollup) ProcessTx() error {
 		} else { // not in mempool
 			receipt, err := sr.L1Client.TransactionReceipt(context.Background(), rtx.Hash())
 			if err != nil {
-				log.Error("query tx receipt error", "error", err)
+				log.Error("query tx receipt error", "tx", rtx.Hash().Hex(), "nonce", rtx.Nonce(), "error", err)
 				if utils.ErrStringMatch(err, ethereum.NotFound) {
 					// sr.pendingTxs.txinfos
 					sr.pendingTxs.IncQueryTimes(rtx.Hash())
 					if txRecord.queryTimes >= 5 {
 						log.Warn("tx discarded",
 							"hash", rtx.Hash().Hex(),
+							"nonce", rtx.Nonce(),
 							"query_times", txRecord.queryTimes,
 						)
 						replacedtx, err := sr.replaceTx(&rtx)
 						if err != nil {
-							log.Error("resend discarded tx", "error", err)
+							log.Error("resend discarded tx", "tx", rtx.Hash().Hex(), "nonce", rtx.Nonce(), "error", err)
 							return err
 						} else {
 							sr.pendingTxs.Remove(rtx.Hash())
 						}
 						sr.pendingTxs.Add(*replacedtx)
-						log.Info("resend discarded tx", "hash", rtx.Hash().Hex())
+						log.Info("resend discarded tx", "old tx", rtx.Hash().Hex(), "new tx", replacedtx.Hash().Hex(), "nonce", replacedtx.Nonce())
 					} else {
-						log.Info("tx not found in mempool", "hash", rtx.Hash().Hex(), "query_times", txRecord.queryTimes)
+						log.Info("tx not found in mempool", "hash", rtx.Hash().Hex(), "nonce", rtx.Nonce(), "query_times", txRecord.queryTimes)
 					}
 				} else {
-					return fmt.Errorf("query tx receipt error:%w", err)
+					return fmt.Errorf("query tx receipt error:%w, tx: %s, nonce: %d", err, rtx.Hash().Hex(), rtx.Nonce())
 				}
 			} else {
 				logs := utils.ParseBusinessInfo(rtx, sr.abi)
@@ -381,7 +388,15 @@ func (sr *Rollup) finalize() error {
 
 	gas := sr.EstimateGas(opts.From, sr.rollupAddr, calldata, feecap, tip)
 
-	nonce := sr.pendingTxs.pnonce + 1
+	var nonce uint64
+	if sr.pendingTxs.pnonce != 0 {
+		nonce = sr.pendingTxs.pnonce + 1
+	} else {
+		nonce, err = sr.L1Client.PendingNonceAt(context.Background(), crypto.PubkeyToAddress(sr.privKey.PublicKey))
+		if err != nil {
+			return fmt.Errorf("query layer1 nonce error:%v", err.Error())
+		}
+	}
 
 	tx := types.NewTx(&types.DynamicFeeTx{
 		ChainID:   sr.chainId,

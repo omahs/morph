@@ -70,6 +70,13 @@ func ParseL1Mempool(rpc *rpc.Client, addr common.Address) ([]types.Transaction, 
 		}
 	}
 
+	// get queued txs
+	if pendingTxs, ok := result["queued"]; ok {
+		for _, tx := range pendingTxs {
+			txs = append(txs, tx)
+		}
+	}
+
 	return txs, nil
 
 }
