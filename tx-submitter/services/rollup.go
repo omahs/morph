@@ -835,10 +835,6 @@ func (r *Rollup) SendTx(tx *types.Transaction) error {
 		return err
 	}
 
-	// after send tx
-	// add to pending txs
-	r.pendingTxs.Add(*tx)
-
 	return nil
 
 }
