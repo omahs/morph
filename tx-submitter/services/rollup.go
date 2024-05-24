@@ -271,18 +271,18 @@ func (sr *Rollup) ProcessTx() error {
 							"nonce", rtx.Nonce(),
 							"query_times", txRecord.queryTimes,
 						)
-						if sr.pendingTxs.pnonce >= rtx.Nonce() {
-							sr.pendingTxs.Remove(rtx.Hash())
-							log.Info("discarded tx,removed",
-								"hash", rtx.Hash().Hex(),
-								"nonce", rtx.Nonce(),
-								"method", method,
-							)
-							return nil
-						}
 
 						replacedtx, err := sr.replaceTx(&rtx)
 						if err != nil {
+							if utils.ErrStringMatch(err, core.ErrNonceTooLow) {
+								log.Info("discarded tx removed",
+									"hash", rtx.Hash().Hex(),
+									"nonce", rtx.Nonce(),
+									"method", method,
+								)
+								return nil
+							}
+
 							log.Error("resend discarded tx", "tx", rtx.Hash().Hex(), "nonce", rtx.Nonce(), "error", err)
 							return err
 						} else {
