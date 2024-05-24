@@ -174,13 +174,9 @@ func (sr *Rollup) Start() {
 	}
 
 	var rollupFinalizeMu sync.Mutex
-	var rollupMu sync.Mutex
-	go utils.Loop(sr.ctx, time.Second*5, func() {
+	go utils.Loop(sr.ctx, time.Second*2, func() {
 		rollupFinalizeMu.Lock()
 		defer rollupFinalizeMu.Unlock()
-		rollupMu.Lock()
-		defer rollupMu.Unlock()
-
 		if err := sr.rollup(); err != nil {
 			if utils.IsRpcErr(err) {
 				sr.metrics.IncRpcErrors()
@@ -190,10 +186,11 @@ func (sr *Rollup) Start() {
 	})
 
 	if sr.Finalize {
-		rollupFinalizeMu.Lock()
-		defer rollupFinalizeMu.Unlock()
 
 		go utils.Loop(sr.ctx, time.Second*20, func() {
+			rollupFinalizeMu.Lock()
+			defer rollupFinalizeMu.Unlock()
+
 			if err := sr.finalize(); err != nil {
 				log.Error("finalize failed", "error", err)
 			}
