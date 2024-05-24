@@ -274,17 +274,18 @@ func (sr *Rollup) ProcessTx() error {
 
 						replacedtx, err := sr.replaceTx(&rtx)
 						if err != nil {
+							log.Error("resend discarded tx", "old_tx", rtx.Hash().Hex(), "nonce", rtx.Nonce(), "error", err)
 							if utils.ErrStringMatch(err, core.ErrNonceTooLow) {
 								log.Info("discarded tx removed",
 									"hash", rtx.Hash().Hex(),
 									"nonce", rtx.Nonce(),
 									"method", method,
 								)
+								sr.pendingTxs.Remove(rtx.Hash())
 								return nil
 							}
 
-							log.Error("resend discarded tx", "tx", rtx.Hash().Hex(), "nonce", rtx.Nonce(), "error", err)
-							return err
+							return fmt.Errorf("resend discarded tx: %w", err)
 						} else {
 							sr.pendingTxs.Remove(rtx.Hash())
 						}
