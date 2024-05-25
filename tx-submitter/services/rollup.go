@@ -515,7 +515,7 @@ func (sr *Rollup) rollup() error {
 	cindex := cindexBig.Uint64()
 
 	if sr.pendingTxs.failedIndex != nil && cindex >= *sr.pendingTxs.failedIndex {
-		sr.pendingTxs.SetFailedIndex(nil)
+		sr.pendingTxs.RemoveRollupRestriction()
 		sr.pendingTxs.SetPindex(cindex)
 	}
 

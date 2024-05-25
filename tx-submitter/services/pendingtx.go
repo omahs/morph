@@ -148,3 +148,10 @@ func (pt *PendingTxs) SetFailedIndex(index *uint64) {
 
 	pt.failedIndex = index
 }
+
+func (pt *PendingTxs) RemoveRollupRestriction() {
+	pt.mu.Lock()
+	defer pt.mu.Unlock()
+
+	pt.failedIndex = nil
+}
