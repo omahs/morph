@@ -35,7 +35,7 @@ func Loop(ctx context.Context, period time.Duration, f func()) {
 func ParseFBatchIndex(calldata []byte) uint64 {
 	abi, _ := bindings.RollupMetaData.GetAbi()
 	parms, _ := abi.Methods["finalizeBatch"].Inputs.Unpack(calldata[4:])
-	return parms[0].(uint64)
+	return parms[0].(*big.Int).Uint64()
 }
 
 func ParseParentBatchIndex(calldata []byte) uint64 {

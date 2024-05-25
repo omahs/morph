@@ -239,10 +239,8 @@ func (sr *Rollup) ProcessTx() error {
 		_, ok := pendingtxMap[txRecord.tx.Hash()]
 		rtx := txRecord.tx
 
-		var method = "finalizeBatch"
-		if rtx.BlobTxSidecar() != nil {
-			method = "commitBatch"
-		}
+		method := utils.ParseMethod(rtx, sr.abi)
+
 		log.Info("process tx", "txHash", rtx.Hash().Hex(), "nonce", rtx.Nonce(), "method", method)
 		// exist in mempool
 		if ok {
@@ -316,13 +314,19 @@ func (sr *Rollup) ProcessTx() error {
 				log.Info("tx included",
 					logs...,
 				)
+
 				if receipt.Status != types.ReceiptStatusSuccessful {
 					// if tx is commitBatch
-					if utils.ParseMethod(rtx, sr.abi) == "commitBatch" {
+					if method == "commitBatch" {
 						fIndex := utils.ParseParentBatchIndex(rtx.Data())
-						sr.pendingTxs.pindex = fIndex
+						sr.pendingTxs.SetPindex(fIndex)
 					}
 
+				} else {
+					if method == "commitBatch" && sr.pendingTxs.failedIndex != nil {
+						sr.pendingTxs.failedIndex = nil
+						log.Info("fail revover", "failed_index", sr.pendingTxs.failedIndex)
+					}
 				}
 
 				sr.pendingTxs.Remove(rtx.Hash())
@@ -515,6 +519,11 @@ func (sr *Rollup) rollup() error {
 	}
 
 	log.Info("batch info", "last_commit_batch", batchIndex-1, "batch_will_get", batchIndex)
+
+	if sr.pendingTxs.failedIndex != nil && batchIndex > *sr.pendingTxs.failedIndex {
+		log.Warn("rollup rejected", "index", batchIndex)
+	}
+
 	batch, err := GetRollupBatchByIndex(batchIndex, sr.L2Clients)
 	if err != nil {
 		return fmt.Errorf("get rollup batch by index err:%v", err)
