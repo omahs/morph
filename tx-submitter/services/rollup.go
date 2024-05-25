@@ -320,6 +320,7 @@ func (sr *Rollup) ProcessTx() error {
 					if method == "commitBatch" {
 						fIndex := utils.ParseParentBatchIndex(rtx.Data())
 						sr.pendingTxs.SetPindex(fIndex)
+						sr.pendingTxs.SetFailedIndex(fIndex)
 					}
 
 				} else {

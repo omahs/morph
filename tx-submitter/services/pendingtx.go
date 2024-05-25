@@ -137,3 +137,10 @@ func (pt *PendingTxs) SetPFinalize(finalize uint64) {
 	defer pt.mu.Unlock()
 	pt.pfinalize = finalize
 }
+
+func (pt *PendingTxs) SetFailedIndex(index uint64) {
+	pt.mu.Lock()
+	defer pt.mu.Unlock()
+
+	pt.failedIndex = &index
+}
