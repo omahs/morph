@@ -942,7 +942,7 @@ func (sr *Rollup) replaceTx(tx *types.Transaction) (*types.Transaction, error) {
 		gasFeeCap = bumpedFeeCap
 	}
 	if tx.Type() == types.BlobTxType {
-		bumpedBlobFeeCap := calcBlobFeeCap(tx.BlobGasFeeCap())
+		bumpedBlobFeeCap := calcThresholdValue(tx.BlobGasFeeCap(), tx.Type() == types.BlobTxType)
 		if bumpedBlobFeeCap.Cmp(blobFeeCap) > 0 {
 			blobFeeCap = bumpedBlobFeeCap
 		}

@@ -42,7 +42,3 @@ func calcThresholdValue(x *big.Int, isBlobTx bool) *big.Int {
 	threshold = threshold.Div(threshold, oneHundred)
 	return threshold
 }
-
-func calcBlobFeeCap(blobFee *big.Int) *big.Int {
-	return new(big.Int).Mul(blobFee, two)
-}
