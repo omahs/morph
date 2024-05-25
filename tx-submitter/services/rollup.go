@@ -243,7 +243,7 @@ func (sr *Rollup) ProcessTx() error {
 		if rtx.BlobTxSidecar() != nil {
 			method = "commitBatch"
 		}
-		log.Info("process tx", "txHash", rtx.Hash(), "nonce", rtx.Nonce(), "method", method)
+		log.Info("process tx", "txHash", rtx.Hash().Hex(), "nonce", rtx.Nonce(), "method", method)
 		// exist in mempool
 		if ok {
 			if txRecord.sendTime+uint64(sr.txTimout.Seconds()) < uint64(time.Now().Unix()) {
