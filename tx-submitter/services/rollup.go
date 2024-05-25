@@ -325,8 +325,9 @@ func (sr *Rollup) ProcessTx() error {
 
 				} else {
 					if method == "commitBatch" && sr.pendingTxs.failedIndex != nil {
-						sr.pendingTxs.failedIndex = nil
 						log.Info("fail revover", "failed_index", sr.pendingTxs.failedIndex)
+						sr.pendingTxs.failedIndex = nil
+
 					}
 				}
 
