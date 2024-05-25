@@ -320,7 +320,9 @@ func (sr *Rollup) ProcessTx() error {
 					if method == "commitBatch" {
 						fIndex := utils.ParseParentBatchIndex(rtx.Data())
 						sr.pendingTxs.SetPindex(fIndex)
-						sr.pendingTxs.SetFailedIndex(fIndex + 1)
+
+						failedindex := fIndex + 1
+						sr.pendingTxs.SetFailedIndex(&failedindex)
 					}
 
 				} else {
@@ -512,6 +514,11 @@ func (sr *Rollup) rollup() error {
 	}
 	cindex := cindexBig.Uint64()
 
+	if sr.pendingTxs.failedIndex != nil && cindex >= *sr.pendingTxs.failedIndex {
+		sr.pendingTxs.SetFailedIndex(nil)
+		sr.pendingTxs.SetPindex(cindex)
+	}
+
 	if sr.pendingTxs.pindex != 0 {
 
 		if cindex > sr.pendingTxs.pindex {
@@ -528,6 +535,7 @@ func (sr *Rollup) rollup() error {
 
 	if sr.pendingTxs.failedIndex != nil && batchIndex > *sr.pendingTxs.failedIndex {
 		log.Warn("rollup rejected", "index", batchIndex)
+		return nil
 	}
 
 	batch, err := GetRollupBatchByIndex(batchIndex, sr.L2Clients)
