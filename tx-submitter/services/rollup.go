@@ -363,8 +363,8 @@ func (sr *Rollup) finalize() error {
 	// batch exist
 	existed, err := sr.Rollup.BatchExist(nil, target)
 	if err != nil {
-
-		return nil
+		log.Error("query batch exist", "err", err)
+		return err
 	}
 	if !existed {
 		log.Warn("finalized batch not existed")
