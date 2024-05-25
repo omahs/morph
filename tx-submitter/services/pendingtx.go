@@ -142,5 +142,9 @@ func (pt *PendingTxs) SetFailedIndex(index uint64) {
 	pt.mu.Lock()
 	defer pt.mu.Unlock()
 
+	if pt.failedIndex != nil {
+		return
+	}
+
 	pt.failedIndex = &index
 }
