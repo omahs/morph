@@ -349,6 +349,10 @@ func (sr *Rollup) finalize() error {
 	}
 
 	target := big.NewInt(int64(sr.pendingTxs.pfinalize + 1))
+	if target.Cmp(lastFinalized) <= 0 {
+		target = new(big.Int).Add(lastFinalized, big.NewInt(1))
+	}
+
 	if target.Cmp(lastCommited) > 0 {
 		log.Info("no need to finalize", "last_finalized", lastFinalized.Uint64(), "last_committed", lastCommited.Uint64())
 		return nil
