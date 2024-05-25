@@ -353,6 +353,10 @@ func (sr *Rollup) finalize() error {
 	}
 
 	target := big.NewInt(int64(sr.pendingTxs.pfinalize + 1))
+	if target.Cmp(lastFinalized) <= 0 {
+		target = new(big.Int).Add(lastFinalized, big.NewInt(1))
+	}
+
 	if target.Cmp(lastCommited) > 0 {
 		log.Info("no need to finalize", "last_finalized", lastFinalized.Uint64(), "last_committed", lastCommited.Uint64())
 		return nil
@@ -367,8 +371,8 @@ func (sr *Rollup) finalize() error {
 	// batch exist
 	existed, err := sr.Rollup.BatchExist(nil, target)
 	if err != nil {
-
-		return nil
+		log.Error("query batch exist", "err", err)
+		return err
 	}
 	if !existed {
 		log.Warn("finalized batch not existed")
