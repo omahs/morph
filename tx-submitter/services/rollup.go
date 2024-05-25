@@ -328,8 +328,7 @@ func (sr *Rollup) ProcessTx() error {
 				} else {
 					if method == "commitBatch" && sr.pendingTxs.failedIndex != nil {
 						log.Info("fail revover", "failed_index", sr.pendingTxs.failedIndex)
-						sr.pendingTxs.failedIndex = nil
-
+						sr.pendingTxs.RemoveRollupRestriction()
 					}
 				}
 
@@ -516,7 +515,6 @@ func (sr *Rollup) rollup() error {
 
 	if sr.pendingTxs.failedIndex != nil && cindex >= *sr.pendingTxs.failedIndex {
 		sr.pendingTxs.RemoveRollupRestriction()
-		sr.pendingTxs.SetPindex(cindex)
 	}
 
 	if sr.pendingTxs.pindex != 0 {
