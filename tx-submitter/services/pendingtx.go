@@ -24,7 +24,9 @@ type PendingTxs struct {
 
 	txinfos map[common.Hash]TxInfo
 	pnonce  uint64 // pending nonce
-	pindex  uint64 // pending batch index
+
+	failedIndex *uint64
+	pindex      uint64 // pending batch index
 
 	pfinalize       uint64
 	commitBatchId   []byte
@@ -116,6 +118,11 @@ func (pt *PendingTxs) IncQueryTimes(txHash common.Hash) {
 func (pt *PendingTxs) SetPindex(index uint64) {
 	pt.mu.Lock()
 	defer pt.mu.Unlock()
+
+	if pt.failedIndex != nil && *pt.failedIndex < index {
+		return
+	}
+
 	pt.pindex = index
 }
 
