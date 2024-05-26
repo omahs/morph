@@ -692,8 +692,9 @@ func (sr *Rollup) EstimateGas(from, to common.Address, data []byte, feecap *big.
 		Data:      data,
 	})
 	if err != nil {
-		log.Warn("estimate gas error", "err", err, "default", "1000,000")
-		return 1400000
+		gas := uint64(160_0000)
+		log.Warn("estimate gas error", "err", err, "default", gas)
+		return gas
 	} else {
 		return gas * 12 / 10
 	}
